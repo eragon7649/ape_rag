@@ -1,0 +1,29 @@
+BIÊN BẢN CUỘC HỌP ĐƠN GIẢN
+
+Tên cuộc họp: Họp test hệ thống RAG
+Ngày: 24/10/2024
+Thời gian: 14:00 - 15:00
+Địa điểm: Phòng họp A
+
+THÀNH VIÊN THAM GIA:
+- Nguyễn Văn A (Trưởng phòng)
+- Trần Thị B (Developer)
+- Lê Văn C (Tester)
+
+NỘI DUNG CUỘC HỌP:
+
+1. Kiểm tra hệ thống RAG
+   - Test parsing tài liệu
+   - Test trích xuất nội dung
+   - Test tạo file output
+
+2. Quyết định:
+   - Hoàn thành test trong tuần này
+   - Báo cáo kết quả vào thứ 6
+
+3. Mục hành động:
+   - Nguyễn Văn A: Chuẩn bị báo cáo
+   - Trần Thị B: Test thêm tính năng
+   - Lê Văn C: Kiểm tra chất lượng
+
+CUỘC HỌP TIẾP THEO: 31/10/2024

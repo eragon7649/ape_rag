@@ -1,0 +1,9 @@
+rag_output_storage
+.env
+output
+rag_storage
+*.pyc
+__pycache__/
+*.env
+.env.local
+.env.*.local
