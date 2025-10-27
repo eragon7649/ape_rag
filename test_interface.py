@@ -235,53 +235,99 @@ if menu == "📁 Upload & Process":
         mode = st.selectbox("Query Mode", ["hybrid", "vector", "graph"], index=0)
         top_k = st.slider("Top K Results", 5, 50, 20)
         
-        # Process button
-        if st.button("🚀 Process Document", type="primary", disabled=not uploaded_file):
-            if uploaded_file:
-                with st.spinner("🔄 Processing document..."):
+        # Process buttons
+        st.markdown("**Processing Options:**")
+        st.info("""
+        - **Process Uploaded File**: Upload a file and process it using incremental processing
+        - **Process All Files**: Run incremental processing on all files in the documents folder
+        """)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🚀 Process Uploaded File", type="primary", disabled=not uploaded_file):
+                if uploaded_file:
+                    with st.spinner("🔄 Processing document with incremental processing..."):
+                        try:
+                            # Save uploaded file temporarily
+                            temp_path = os.path.join(DOCUMENTS_DIR, uploaded_file.name)
+                            with open(temp_path, "wb") as f:
+                                f.write(uploaded_file.getbuffer())
+                            
+                            # Use incremental processing instead of single file processing
+                            result = asyncio.run(st.session_state.processor.process_incremental(DOCUMENTS_DIR))
+                            
+                            if result["status"] == "no_changes":
+                                st.info(f"ℹ️ {result['message']}")
+                            elif result["status"] == "completed":
+                                # Show processing results
+                                successful_count = result["successful_files"]
+                                failed_count = result["failed_files"]
+                                total_count = result["total_files"]
+                                
+                                if successful_count > 0:
+                                    st.success(f"✅ Processing completed! {successful_count}/{total_count} files processed successfully")
+                                    
+                                    # Show scan report
+                                    scan_report = result["scan_report"]
+                                    if scan_report["files_to_process_list"]:
+                                        st.info(f"📄 Files processed: {', '.join([f['name'] for f in scan_report['files_to_process_list']])}")
+                                    
+                                    # Show processing results for uploaded file
+                                    processing_results = result["processing_results"]
+                                    uploaded_file_result = None
+                                    for pr in processing_results:
+                                        if pr["file_path"] == temp_path:
+                                            uploaded_file_result = pr
+                                            break
+                                    
+                                    if uploaded_file_result and uploaded_file_result["success"]:
+                                        st.success(f"✅ {uploaded_file.name} processed successfully!")
+                                    elif uploaded_file_result and not uploaded_file_result["success"]:
+                                        st.error(f"❌ {uploaded_file.name} processing failed: {uploaded_file_result.get('error', 'Unknown error')}")
+                                else:
+                                    st.error("❌ No files were processed successfully")
+                                
+                                if failed_count > 0:
+                                    st.warning(f"⚠️ {failed_count} files failed to process")
+                            else:
+                                st.error(f"❌ Processing failed with status: {result['status']}")
+                            
+                        except Exception as e:
+                            st.error(f"❌ Error: {str(e)}")
+        
+        with col2:
+            if st.button("🔄 Process All Files", type="secondary"):
+                with st.spinner("🔄 Running incremental processing on all files..."):
                     try:
-                        # Save uploaded file temporarily
-                        temp_path = os.path.join(DOCUMENTS_DIR, uploaded_file.name)
-                        with open(temp_path, "wb") as f:
-                            f.write(uploaded_file.getbuffer())
+                        # Run incremental processing on all files in documents directory
+                        result = asyncio.run(st.session_state.processor.process_incremental(DOCUMENTS_DIR))
                         
-                        # Process document
-                        result = asyncio.run(st.session_state.processor.process_document_and_extract(temp_path))
-                        
-                        if result.get('error'):
-                            st.error(f"❌ Processing failed: {result['error']}")
+                        if result["status"] == "no_changes":
+                            st.info(f"ℹ️ {result['message']}")
+                        elif result["status"] == "completed":
+                            # Show processing results
+                            successful_count = result["successful_files"]
+                            failed_count = result["failed_files"]
+                            total_count = result["total_files"]
+                            
+                            if successful_count > 0:
+                                st.success(f"✅ Processing completed! {successful_count}/{total_count} files processed successfully")
+                                
+                                # Show scan report
+                                scan_report = result["scan_report"]
+                                if scan_report["files_to_process_list"]:
+                                    st.info(f"📄 Files processed: {', '.join([f['name'] for f in scan_report['files_to_process_list']])}")
+                                
+                                if scan_report["files_unchanged_list"]:
+                                    st.info(f"✅ Files unchanged: {', '.join([f['name'] for f in scan_report['files_unchanged_list']])}")
+                            else:
+                                st.error("❌ No files were processed successfully")
+                            
+                            if failed_count > 0:
+                                st.warning(f"⚠️ {failed_count} files failed to process")
                         else:
-                            st.success("✅ Processing completed!")
-                            
-                            # Generate outputs
-                            file_base_name = os.path.splitext(uploaded_file.name)[0]
-                            
-                            # Generate all output formats
-                            try:
-                                # 1. Database (simulated)
-                                st.session_state.formatter.to_database(result.get('extracted_json', {}))
-                                
-                                # 2. Word document
-                                if result.get('extracted_json'):
-                                    st.session_state.formatter.to_word_document(result['extracted_json'], f"SUMMARY_{file_base_name}")
-                                
-                                # 3. Raw content TXT
-                                raw_content = result.get('raw_content', '')
-                                st.session_state.formatter.to_raw_content_txt(raw_content, file_base_name)
-                                
-                                # 4. Comprehensive TXT
-                                st.session_state.formatter.to_comprehensive_txt(result, file_base_name)
-                                
-                                # 5. JSON output
-                                st.session_state.formatter.to_json_output(result, file_base_name)
-                                
-                                # 6. Summary report
-                                st.session_state.formatter.to_summary_report(result, file_base_name)
-                                
-                                st.success("✅ All output files generated successfully!")
-                                
-                            except Exception as e:
-                                st.error(f"❌ Error generating outputs: {e}")
+                            st.error(f"❌ Processing failed with status: {result['status']}")
                         
                     except Exception as e:
                         st.error(f"❌ Error: {str(e)}")

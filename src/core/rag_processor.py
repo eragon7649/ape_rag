@@ -144,6 +144,9 @@ class MeetingProcessor:
     async def _perform_intelligent_extraction(self, file_path: str):
         """Thực hiện intelligent extraction với fallback"""
         try:
+            # Đảm bảo document được load vào RAGAnything trước khi query
+            await self.rag.process_document_complete(file_path)
+            
             # Thử với hybrid mode trước
             return await self.rag.aquery(
                 QUERY_TEMPLATE,
