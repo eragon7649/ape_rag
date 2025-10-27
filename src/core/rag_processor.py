@@ -13,6 +13,7 @@ from .document_parser import DocumentParser
 from .content_extractor import ContentExtractor
 from .error_handler import ErrorHandler
 from .config_validator import ConfigValidator
+from .incremental_processor import IncrementalProcessor
 from typing import List, Dict, Any
 
 class MeetingProcessor:
@@ -26,6 +27,7 @@ class MeetingProcessor:
         self.content_extractor = ContentExtractor(self.rag)
         self.error_handler = ErrorHandler()
         self.config_validator = ConfigValidator()
+        self.incremental_processor = IncrementalProcessor()
 
     # --- Khởi tạo các hàm Mô hình LLM/VLM/Embedding ---
     def _llm_model_func(self, prompt, system_prompt=None, history_messages=[], **kwargs):
@@ -289,5 +291,97 @@ class MeetingProcessor:
             print(f"⚠️ Không thể trích xuất nội dung gốc: {e}")
             # Fallback: sử dụng raw response nếu có
             parsed_data['_raw_content'] = parsed_data.get('_raw_response', 'Không thể trích xuất nội dung')
+    
+    # --- Hàm xử lý incremental ---
+    async def process_incremental(self, documents_dir: str) -> Dict[str, Any]:
+        """
+        Xử lý incremental - chỉ xử lý file mới hoặc đã thay đổi
+        """
+        print("🔄 Bắt đầu quét incremental...")
+        
+        # 1. Quét thư mục để tìm file cần xử lý
+        scan_report = self.incremental_processor.scan_directory(documents_dir)
+        
+        files_to_process = scan_report["files_to_process_list"]
+        
+        if not files_to_process:
+            print("✅ Không có file nào cần xử lý")
+            return {
+                "status": "no_changes",
+                "message": "Tất cả files đã được xử lý và không có thay đổi",
+                "scan_report": scan_report
+            }
+        
+        print(f"📋 Tìm thấy {len(files_to_process)} file(s) cần xử lý")
+        
+        # 2. Xử lý từng file
+        processing_results = []
+        
+        for file_info in files_to_process:
+            file_path = file_info["path"]
+            filename = file_info["name"]
+            
+            print(f"\n{'='*50}")
+            print(f"🚀 Xử lý file: {filename}")
+            
+            try:
+                # Xử lý file
+                result = await self.process_document_and_extract(file_path)
+                
+                if result.get('error'):
+                    print(f"❌ Xử lý thất bại: {result['error']}")
+                    self.incremental_processor.mark_file_failed(filename, result['error'])
+                    processing_results.append({
+                        'file_path': file_path,
+                        'success': False,
+                        'error': result['error']
+                    })
+                else:
+                    print(f"✅ Xử lý thành công: {filename}")
+                    self.incremental_processor.mark_file_processed(filename, {
+                        'success': True,
+                        'extracted_data_keys': list(result.keys()),
+                        'has_json': bool(result.get('extracted_json'))
+                    })
+                    processing_results.append({
+                        'file_path': file_path,
+                        'success': True,
+                        'result': result
+                    })
+                    
+            except Exception as e:
+                error_msg = f"Lỗi không mong đợi: {str(e)}"
+                print(f"❌ {error_msg}")
+                self.incremental_processor.mark_file_failed(filename, error_msg)
+                processing_results.append({
+                    'file_path': file_path,
+                    'success': False,
+                    'error': error_msg
+                })
+        
+        # 3. Tạo báo cáo tổng kết
+        successful_count = len([r for r in processing_results if r['success']])
+        failed_count = len(processing_results) - successful_count
+        
+        print(f"\n🎉 Hoàn tất xử lý incremental!")
+        print(f"✅ Thành công: {successful_count} files")
+        print(f"❌ Thất bại: {failed_count} files")
+        
+        return {
+            "status": "completed",
+            "total_files": len(files_to_process),
+            "successful_files": successful_count,
+            "failed_files": failed_count,
+            "processing_results": processing_results,
+            "scan_report": scan_report
+        }
+    
+    def get_processing_status(self) -> Dict[str, Any]:
+        """Lấy trạng thái xử lý của tất cả files"""
+        return self.incremental_processor.get_processing_status()
+    
+    def reset_file_tracking(self, filename: str = None):
+        """Reset tracking cho file cụ thể hoặc tất cả files"""
+        self.incremental_processor.reset_file_tracking(filename)
 
 # Lớp OutputFormatter sẽ được viết sau (để chuyển JSON sang Word/PDF/DB)
