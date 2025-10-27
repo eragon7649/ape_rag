@@ -112,9 +112,7 @@ def get_output_files_for_document(document_name):
     
     for filename in os.listdir(OUTPUT_DIR):
         if filename.startswith(f"SUMMARY_{base_name}") or \
-           filename.startswith(f"COMPREHENSIVE_{base_name}") or \
-           filename.startswith(f"DATA_{base_name}") or \
-           filename.startswith(f"RAW_CONTENT_{base_name}"):
+           filename.startswith(f"FULL_CONTENT_{base_name}"):
             file_path = os.path.join(OUTPUT_DIR, filename)
             if os.path.isfile(file_path):
                 stat = os.stat(file_path)
@@ -130,15 +128,9 @@ def get_output_files_for_document(document_name):
 
 def get_file_type(filename):
     """Determine file type based on filename"""
-    if filename.endswith('.docx'):
-        return 'Tài Liệu Word'
-    elif filename.endswith('.json'):
-        return 'Dữ Liệu JSON'
-    elif filename.endswith('.txt'):
-        if 'COMPREHENSIVE' in filename:
-            return 'Báo Cáo Toàn Diện'
-        elif 'RAW_CONTENT' in filename:
-            return 'Nội Dung Thô'
+    if filename.endswith('.txt'):
+        if 'FULL_CONTENT' in filename:
+            return 'Nội Dung Đầy Đủ'
         elif 'SUMMARY' in filename:
             return 'Báo Cáo Tóm Tắt'
         else:
@@ -149,11 +141,7 @@ def get_file_type(filename):
 def display_file_content(file_path, file_type):
     """Display content of a file based on its type"""
     try:
-        if file_type == 'Dữ Liệu JSON':
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            st.json(data)
-        elif file_type in ['Báo Cáo Toàn Diện', 'Nội Dung Thô', 'Báo Cáo Tóm Tắt', 'Tệp Văn Bản']:
+        if file_type in ['Nội Dung Đầy Đủ', 'Báo Cáo Tóm Tắt', 'Tệp Văn Bản']:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             st.text_area("Nội Dung Tệp", content, height=400)

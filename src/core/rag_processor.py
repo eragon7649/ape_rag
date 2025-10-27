@@ -8,7 +8,7 @@ from raganything import RAGAnything
 from .config import (
     RAG_CONFIG, LLM_MODEL, VLM_MODEL, EMBEDDING_MODEL, EMBEDDING_DIM, OPENAI_API_KEY, OPENAI_BASE_URL
 )
-from data.extraction_prompts import QUERY_TEMPLATE, SYSTEM_PROMPT, CHANGELOG_TEMPLATE
+from data.extraction_prompts import SUMMARY_TEMPLATE, FULL_CONTENT_TEMPLATE, SYSTEM_PROMPT
 from .document_parser import DocumentParser
 from .content_extractor import ContentExtractor
 from .error_handler import ErrorHandler
@@ -79,10 +79,7 @@ class MeetingProcessor:
     # --- Hàm chính: Xử lý tệp End-to-End với cải tiến ---
     async def process_document_and_extract(self, file_path: str) -> Dict[str, Any]:
         """
-        Thực hiện xử lý tài liệu với các cải tiến mới:
-        - Validation trước khi xử lý
-        - Error handling với retry mechanism
-        - Trích xuất nội dung toàn diện
+        Thực hiện xử lý tài liệu với output đơn giản hóa
         """
         print(f"🚀 Bắt đầu xử lý: {file_path}")
         
@@ -122,111 +119,63 @@ class MeetingProcessor:
                 'extraction_timestamp': None
             }
         
-        # 4. Truy vấn Thông minh và Trích xuất JSON (Intelligent Query & Extraction)
+        # 4. Tạo tóm tắt và nội dung đầy đủ
         try:
-            extraction_result = await self.error_handler.retry_with_backoff(
-                self._perform_intelligent_extraction, file_path
+            # Tạo tóm tắt
+            summary_result = await self.error_handler.retry_with_backoff(
+                self._create_summary_content, file_path
             )
+            comprehensive_data['summary_content'] = summary_result
             
-            # Parse JSON response
-            parsed_json = self._parse_json_response(extraction_result)
-            comprehensive_data.update(parsed_json)
+            # Tạo nội dung đầy đủ
+            full_content_result = await self.error_handler.retry_with_backoff(
+                self._create_full_content, file_path
+            )
+            comprehensive_data['full_content'] = full_content_result
             
         except Exception as e:
-            error_info = self.error_handler.handle_api_error(e, "RAG Query")
-            print(f"⚠️ Intelligent extraction failed: {error_info['error_message']}")
-            # Vẫn trả về comprehensive data dù không có JSON extraction
-            comprehensive_data['extraction_error'] = error_info
+            print(f"⚠️ Lỗi tạo nội dung: {e}")
+            # Fallback: sử dụng raw content
+            comprehensive_data['summary_content'] = comprehensive_data.get('raw_content', '')[:500] + "..."
+            comprehensive_data['full_content'] = comprehensive_data.get('raw_content', '')
         
         # 5. Trả về kết quả toàn diện
         return comprehensive_data
     
-    async def _perform_intelligent_extraction(self, file_path: str):
-        """Thực hiện intelligent extraction với fallback"""
+    async def _create_summary_content(self, file_path: str):
+        """Tạo nội dung tóm tắt"""
         try:
-            # Đảm bảo document được load vào RAGAnything trước khi query
             await self.rag.process_document_complete(file_path)
             
-            # Thử với hybrid mode trước
             return await self.rag.aquery(
-                QUERY_TEMPLATE,
+                SUMMARY_TEMPLATE,
                 mode="hybrid",
+                user_prompt=SYSTEM_PROMPT,
+                vlm_enhanced=True,
+                top_k=10,
+                enable_rerank=False
+            )
+        except Exception as e:
+            print(f"⚠️ Lỗi tạo tóm tắt: {e}")
+            return "Không thể tạo tóm tắt tự động"
+
+    async def _create_full_content(self, file_path: str):
+        """Tạo nội dung đầy đủ"""
+        try:
+            await self.rag.process_document_complete(file_path)
+            
+            return await self.rag.aquery(
+                FULL_CONTENT_TEMPLATE,
+                mode="hybrid", 
                 user_prompt=SYSTEM_PROMPT,
                 vlm_enhanced=True,
                 top_k=20,
                 enable_rerank=False
             )
         except Exception as e:
-            if "rate_limit" in str(e).lower() or "429" in str(e):
-                print(f"⚠️ Rate limit hit, thử với context nhỏ hơn...")
-                # Fallback với context nhỏ hơn
-                return await self.rag.aquery(
-                    QUERY_TEMPLATE,
-                    mode="vector",
-                    user_prompt=SYSTEM_PROMPT,
-                    vlm_enhanced=False,
-                    top_k=10,
-                    enable_rerank=False
-                )
-            else:
-                raise e
+            print(f"⚠️ Lỗi tạo nội dung đầy đủ: {e}")
+            return "Không thể tạo nội dung đầy đủ tự động"
     
-    def _parse_json_response(self, extraction_result):
-        """Parse JSON response từ LLM"""
-        import json
-        import re
-        
-        try:
-            # Lấy text response
-            if hasattr(extraction_result, 'answer'):
-                response_text = extraction_result.answer
-            else:
-                response_text = str(extraction_result)
-            
-            # Loại bỏ markdown code block
-            if response_text.startswith('```json'):
-                response_text = re.sub(r'^```json\s*', '', response_text)
-                response_text = re.sub(r'\s*```$', '', response_text)
-            elif response_text.startswith('```'):
-                response_text = re.sub(r'^```\s*', '', response_text)
-                response_text = re.sub(r'\s*```$', '', response_text)
-            
-            # Xử lý JSON bị cắt ngắn
-            response_text = response_text.strip()
-            open_braces = response_text.count('{')
-            close_braces = response_text.count('}')
-            
-            if open_braces > close_braces:
-                missing_braces = open_braces - close_braces
-                response_text += '}' * missing_braces
-            
-            # Tìm vị trí cuối của JSON object
-            if response_text.startswith('{'):
-                brace_count = 0
-                json_end = -1
-                for i, char in enumerate(response_text):
-                    if char == '{':
-                        brace_count += 1
-                    elif char == '}':
-                        brace_count -= 1
-                        if brace_count == 0:
-                            json_end = i + 1
-                            break
-                
-                if json_end > 0:
-                    response_text = response_text[:json_end]
-            
-            parsed_json = json.loads(response_text)
-            return {'extracted_json': parsed_json, 'json_parsing_success': True}
-            
-        except Exception as e:
-            print(f"⚠️ JSON parsing failed: {e}")
-            return {
-                'extracted_json': {},
-                'json_parsing_success': False,
-                'json_error': str(e),
-                'raw_response': response_text[:500] if 'response_text' in locals() else str(extraction_result)[:500]
-            }
     
     async def _extract_raw_content_fallback(self, file_path: str) -> str:
         """Fallback method để lấy raw content"""

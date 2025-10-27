@@ -78,35 +78,26 @@ async def run_processing_pipeline():
                     })
                     continue
                 
-                print("\n--- TẠO ĐẦU RA (AUTOMATED OUTPUT) ---")
+                print("\n--- TẠO ĐẦU RA (SIMPLIFIED OUTPUT) ---")
                 
-                # Tạo nhiều loại output
+                # Chỉ tạo 2 file txt
                 file_base_name = os.path.splitext(file_name)[0]
                 
-                # 1. Database (mô phỏng)
-                formatter.to_database(extracted_data.get('extracted_json', {}))
+                # 1. File tóm tắt
+                summary_path = formatter.create_summary_txt(extracted_data, file_base_name)
                 
-                # 2. Word document (nếu có JSON data)
-                if extracted_data.get('extracted_json'):
-                    formatter.to_word_document(extracted_data['extracted_json'], f"SUMMARY_{file_base_name}")
+                # 2. File nội dung đầy đủ  
+                full_content_path = formatter.create_full_content_txt(extracted_data, file_base_name)
                 
-                # 3. Raw content TXT
-                raw_content = extracted_data.get('raw_content', '')
-                formatter.to_raw_content_txt(raw_content, file_base_name)
-                
-                # 4. Comprehensive TXT (mới)
-                formatter.to_comprehensive_txt(extracted_data, file_base_name)
-                
-                # 5. JSON output (mới)
-                formatter.to_json_output(extracted_data, file_base_name)
-                
-                # 6. Summary report (mới)
-                formatter.to_summary_report(extracted_data, file_base_name)
+                print(f"✅ Hoàn tất xử lý {file_name}")
+                print(f"📄 Tóm tắt: {summary_path}")
+                print(f"📄 Nội dung đầy đủ: {full_content_path}")
                 
                 processing_results.append({
                     'file_path': file_path,
                     'success': True,
-                    'execution_time': result['execution_time']
+                    'execution_time': result['execution_time'],
+                    'output_files': [summary_path, full_content_path]
                 })
                 
             else:

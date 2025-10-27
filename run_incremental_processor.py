@@ -57,29 +57,17 @@ async def run_incremental_processing():
                 
                 print(f"📄 Generating outputs for: {filename}")
                 
-                # Generate all output formats
+                # Generate simplified outputs (only 2 files)
                 try:
-                    # 1. Database (simulated)
-                    formatter.to_database(extracted_data.get('extracted_json', {}))
+                    # 1. File tóm tắt
+                    summary_path = formatter.create_summary_txt(extracted_data, file_base_name)
                     
-                    # 2. Word document
-                    if extracted_data.get('extracted_json'):
-                        formatter.to_word_document(extracted_data['extracted_json'], f"SUMMARY_{file_base_name}")
+                    # 2. File nội dung đầy đủ  
+                    full_content_path = formatter.create_full_content_txt(extracted_data, file_base_name)
                     
-                    # 3. Raw content TXT
-                    raw_content = extracted_data.get('raw_content', '')
-                    formatter.to_raw_content_txt(raw_content, file_base_name)
-                    
-                    # 4. Comprehensive TXT
-                    formatter.to_comprehensive_txt(extracted_data, file_base_name)
-                    
-                    # 5. JSON output
-                    formatter.to_json_output(extracted_data, file_base_name)
-                    
-                    # 6. Summary report
-                    formatter.to_summary_report(extracted_data, file_base_name)
-                    
-                    print(f"✅ All outputs generated for: {filename}")
+                    print(f"✅ Simplified outputs generated for: {filename}")
+                    print(f"📄 Summary: {summary_path}")
+                    print(f"📄 Full content: {full_content_path}")
                     
                 except Exception as e:
                     print(f"⚠️ Error generating outputs for {filename}: {e}")

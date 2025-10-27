@@ -61,17 +61,20 @@ async def run_processing_pipeline():
             print("✅ Document processed successfully")
             print(f"📊 Extracted data: {extracted_data.get('meeting_title', 'Unknown')}")
             
-            # Generate outputs
-            print("\n--- Generating Outputs ---")
+            # Generate simplified outputs (only 2 files)
+            print("\n--- Generating Simplified Outputs ---")
             
-            # Save to database (simulated)
-            formatter.to_database(extracted_data)
-            
-            # Generate Word document
             file_base_name = os.path.splitext(file_name)[0]
-            word_path = formatter.to_word_document(extracted_data, f"SUMMARY_{file_base_name}")
+            
+            # 1. File tóm tắt
+            summary_path = formatter.create_summary_txt(extracted_data, file_base_name)
+            
+            # 2. File nội dung đầy đủ  
+            full_content_path = formatter.create_full_content_txt(extracted_data, file_base_name)
             
             print(f"✅ Processing completed for {file_name}")
+            print(f"📄 Summary: {summary_path}")
+            print(f"📄 Full content: {full_content_path}")
             
         except Exception as e:
             print(f"❌ Error processing {file_name}: {e}")
