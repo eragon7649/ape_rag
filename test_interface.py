@@ -226,191 +226,138 @@ if menu == "📁 Tải Lên & Xử Lý":
         with col1:
             if st.button("🚀 Xử Lý Tệp Đã Tải", type="primary", disabled=not uploaded_file):
                 if uploaded_file:
-                    with st.spinner("🔄 Đang xử lý tài liệu với xử lý tăng dần..."):
+                    with st.spinner("🔄 Đang xử lý tài liệu..."):
                         try:
+                            st.info("🔍 Bước 1: Bắt đầu xử lý tệp đã tải")
+                            
                             # Save uploaded file temporarily
+                            st.info("🔍 Bước 2: Lưu tệp tạm thời")
                             temp_path = os.path.join(DOCUMENTS_DIR, uploaded_file.name)
+                            st.text(f"📁 Đường dẫn tệp: {temp_path}")
+                            
                             with open(temp_path, "wb") as f:
                                 f.write(uploaded_file.getbuffer())
-                            
-                            st.info(f"📁 Đã lưu tệp: {temp_path}")
+                            st.success("✅ Đã lưu tệp thành công")
                             
                             # Run incremental processor script
+                            st.info("🔍 Bước 3: Chuẩn bị chạy script incremental")
                             import subprocess
                             
-                            # Try multiple ways to find the script
-                            script_paths = [
-                                os.path.join(os.path.dirname(__file__), "run_incremental_processor.py"),
-                                "run_incremental_processor.py",
-                                os.path.abspath("run_incremental_processor.py")
-                            ]
-                            
-                            script_path = None
-                            for path in script_paths:
-                                if os.path.exists(path):
-                                    script_path = path
-                                    break
-                            
-                            if not script_path:
-                                st.error(f"❌ Không tìm thấy script run_incremental_processor.py")
-                                st.text(f"Đã thử các đường dẫn: {script_paths}")
-                            else:
-                                st.info(f"🚀 Đang chạy script: {script_path}")
-                                st.info(f"📁 Working directory: {os.path.dirname(__file__)}")
-                                
-                                # Use virtual environment python
-                                venv_python = os.path.join(os.path.dirname(__file__), "venv", "bin", "python")
-                                if os.path.exists(venv_python):
-                                    python_cmd = venv_python
-                                    st.info(f"🐍 Sử dụng Python từ virtual environment: {python_cmd}")
-                                else:
-                                    python_cmd = sys.executable
-                                    st.info(f"🐍 Sử dụng Python hệ thống: {python_cmd}")
-                                
-                                result = subprocess.run([python_cmd, script_path], 
-                                                       capture_output=True, text=True, 
-                                                       cwd=os.path.dirname(__file__),
-                                                       timeout=300)  # 5 minutes timeout
-                                
-                                st.info(f"📊 Script hoàn thành với return code: {result.returncode}")
-                                
-                                if result.returncode == 0:
-                                    st.success(f"✅ {uploaded_file.name} đã được xử lý thành công!")
-                                    if result.stdout:
-                                        st.text("Kết quả xử lý:")
-                                        st.text(result.stdout)
-                                else:
-                                    st.error(f"❌ {uploaded_file.name} xử lý thất bại")
-                                    if result.stderr:
-                                        st.text("Chi tiết lỗi:")
-                                        st.text(result.stderr)
-                                    if result.stdout:
-                                        st.text("Output:")
-                                        st.text(result.stdout)
-                            
-                        except subprocess.TimeoutExpired:
-                            st.error("❌ Xử lý quá thời gian (5 phút)")
-                        except Exception as e:
-                            st.error(f"❌ Lỗi: {str(e)}")
-                            st.text(f"Chi tiết: {type(e).__name__}")
-                            st.text(f"Working directory: {os.getcwd()}")
-                            st.text(f"Script path: {script_path if 'script_path' in locals() else 'Not defined'}")
-        
-        with col2:
-            if st.button("🔄 Xử Lý Tất Cả Tệp", type="secondary"):
-                with st.spinner("🔄 Đang chạy xử lý trên tất cả tệp..."):
-                    try:
-                        # Run processor script
-                        import subprocess
-                        
-                        # Try multiple ways to find the script
-                        script_paths = [
-                            os.path.join(os.path.dirname(__file__), "run_processor.py"),
-                            "run_processor.py",
-                            os.path.abspath("run_processor.py")
-                        ]
-                        
-                        script_path = None
-                        for path in script_paths:
-                            if os.path.exists(path):
-                                script_path = path
-                                break
-                        
-                        if not script_path:
-                            st.error(f"❌ Không tìm thấy script run_processor.py")
-                            st.text(f"Đã thử các đường dẫn: {script_paths}")
-                        else:
-                            st.info(f"🚀 Đang chạy script: {script_path}")
-                            st.info(f"📁 Working directory: {os.path.dirname(__file__)}")
+                            script_path = os.path.join(os.path.dirname(__file__), "run_incremental_processor.py")
+                            st.text(f"📄 Script path: {script_path}")
+                            st.text(f"📄 Script exists: {os.path.exists(script_path)}")
                             
                             # Use virtual environment python
+                            st.info("🔍 Bước 4: Xác định Python command")
                             venv_python = os.path.join(os.path.dirname(__file__), "venv", "bin", "python")
+                            st.text(f"🐍 Venv python: {venv_python}")
+                            st.text(f"🐍 Venv exists: {os.path.exists(venv_python)}")
+                            
                             if os.path.exists(venv_python):
                                 python_cmd = venv_python
-                                st.info(f"🐍 Sử dụng Python từ virtual environment: {python_cmd}")
+                                st.info("✅ Sử dụng Python từ virtual environment")
                             else:
                                 python_cmd = sys.executable
-                                st.info(f"🐍 Sử dụng Python hệ thống: {python_cmd}")
+                                st.info("✅ Sử dụng Python hệ thống")
                             
+                            st.text(f"🐍 Final python cmd: {python_cmd}")
+                            st.text(f"📁 Working directory: {os.path.dirname(__file__)}")
+                            
+                            st.info("🔍 Bước 5: Chạy subprocess")
                             result = subprocess.run([python_cmd, script_path], 
                                                    capture_output=True, text=True, 
                                                    cwd=os.path.dirname(__file__),
                                                    timeout=300)  # 5 minutes timeout
                             
-                            st.info(f"📊 Script hoàn thành với return code: {result.returncode}")
+                            st.info("🔍 Bước 6: Kiểm tra kết quả")
+                            st.text(f"📊 Return code: {result.returncode}")
+                            st.text(f"📊 Stdout length: {len(result.stdout)}")
+                            st.text(f"📊 Stderr length: {len(result.stderr)}")
+                            
+                            if result.stdout:
+                                st.text("📄 Stdout:")
+                                st.text(result.stdout)
+                            
+                            if result.stderr:
+                                st.text("❌ Stderr:")
+                                st.text(result.stderr)
                             
                             if result.returncode == 0:
-                                st.success("✅ Xử lý tất cả tệp hoàn thành thành công!")
-                                if result.stdout:
-                                    st.text("Kết quả xử lý:")
-                                    st.text(result.stdout)
+                                st.success(f"✅ {uploaded_file.name} đã được xử lý thành công!")
                             else:
-                                st.error("❌ Xử lý tất cả tệp thất bại")
-                                if result.stderr:
-                                    st.text("Chi tiết lỗi:")
-                                    st.text(result.stderr)
-                                if result.stdout:
-                                    st.text("Output:")
-                                    st.text(result.stdout)
+                                st.error(f"❌ {uploaded_file.name} xử lý thất bại")
+                            
+                        except subprocess.TimeoutExpired:
+                            st.error("❌ Xử lý quá thời gian (5 phút)")
+                        except Exception as e:
+                            st.error(f"❌ Lỗi: {str(e)}")
+                            st.text(f"🔍 Chi tiết lỗi: {type(e).__name__}")
+                            import traceback
+                            st.text(f"🔍 Traceback:")
+                            st.text(traceback.format_exc())
+        
+        with col2:
+            if st.button("🔄 Xử Lý Tất Cả Tệp", type="secondary"):
+                with st.spinner("🔄 Đang xử lý tất cả tệp..."):
+                    try:
+                        st.info("🔍 Bước 1: Bắt đầu xử lý tất cả tệp")
+                        
+                        # Run processor script
+                        st.info("🔍 Bước 2: Chuẩn bị chạy script processor")
+                        import subprocess
+                        
+                        script_path = os.path.join(os.path.dirname(__file__), "run_processor.py")
+                        st.text(f"📄 Script path: {script_path}")
+                        st.text(f"📄 Script exists: {os.path.exists(script_path)}")
+                        
+                        # Use virtual environment python
+                        st.info("🔍 Bước 3: Xác định Python command")
+                        venv_python = os.path.join(os.path.dirname(__file__), "venv", "bin", "python")
+                        st.text(f"🐍 Venv python: {venv_python}")
+                        st.text(f"🐍 Venv exists: {os.path.exists(venv_python)}")
+                        
+                        if os.path.exists(venv_python):
+                            python_cmd = venv_python
+                            st.info("✅ Sử dụng Python từ virtual environment")
+                        else:
+                            python_cmd = sys.executable
+                            st.info("✅ Sử dụng Python hệ thống")
+                        
+                        st.text(f"🐍 Final python cmd: {python_cmd}")
+                        st.text(f"📁 Working directory: {os.path.dirname(__file__)}")
+                        
+                        st.info("🔍 Bước 4: Chạy subprocess")
+                        result = subprocess.run([python_cmd, script_path], 
+                                               capture_output=True, text=True, 
+                                               cwd=os.path.dirname(__file__),
+                                               timeout=300)  # 5 minutes timeout
+                        
+                        st.info("🔍 Bước 5: Kiểm tra kết quả")
+                        st.text(f"📊 Return code: {result.returncode}")
+                        st.text(f"📊 Stdout length: {len(result.stdout)}")
+                        st.text(f"📊 Stderr length: {len(result.stderr)}")
+                        
+                        if result.stdout:
+                            st.text("📄 Stdout:")
+                            st.text(result.stdout)
+                        
+                        if result.stderr:
+                            st.text("❌ Stderr:")
+                            st.text(result.stderr)
+                        
+                        if result.returncode == 0:
+                            st.success("✅ Xử lý tất cả tệp hoàn thành thành công!")
+                        else:
+                            st.error("❌ Xử lý tất cả tệp thất bại")
                         
                     except subprocess.TimeoutExpired:
                         st.error("❌ Xử lý quá thời gian (5 phút)")
                     except Exception as e:
                         st.error(f"❌ Lỗi: {str(e)}")
-                        st.text(f"Chi tiết: {type(e).__name__}")
-                        st.text(f"Working directory: {os.getcwd()}")
-                        st.text(f"Script path: {script_path if 'script_path' in locals() else 'Not defined'}")
-    
-    # Show processing status
-    st.subheader("📊 Trạng Thái Xử Lý")
-    
-    # Debug information
-    st.subheader("🔍 Thông Tin Debug")
-    
-    # Check documents directory
-    if os.path.exists(DOCUMENTS_DIR):
-        files_in_docs = [f for f in os.listdir(DOCUMENTS_DIR) 
-                        if not f.startswith('.') and f != 'README.md']
-        st.info(f"📁 Thư mục documents: {DOCUMENTS_DIR}")
-        st.info(f"📄 Số tệp trong documents: {len(files_in_docs)}")
-        if files_in_docs:
-            st.text(f"Tệp: {', '.join(files_in_docs)}")
-    else:
-        st.warning(f"⚠️ Thư mục documents không tồn tại: {DOCUMENTS_DIR}")
-    
-    # Check output directory
-    if os.path.exists(OUTPUT_DIR):
-        files_in_output = os.listdir(OUTPUT_DIR)
-        st.info(f"📁 Thư mục output: {OUTPUT_DIR}")
-        st.info(f"📄 Số tệp trong output: {len(files_in_output)}")
-    else:
-        st.warning(f"⚠️ Thư mục output không tồn tại: {OUTPUT_DIR}")
-    
-    try:
-        status = st.session_state.processor.get_processing_status()
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Tổng Số Tệp", status["total_files"])
-        with col2:
-            st.metric("Đã Xử Lý", status["processed_files"], delta=None)
-        with col3:
-            st.metric("Thất Bại", status["failed_files"], delta=None)
-        
-        # Show detailed status
-        if status["files_detail"]:
-            st.subheader("Chi Tiết Tệp")
-            for filename, detail in status["files_detail"].items():
-                status_color = "success" if detail["status"] == "processed" else "error" if detail["status"] == "failed" else "warning"
-                st.markdown(f"**{filename}**: <span class='status-{status_color}'>{detail['status'].upper()}</span>", unsafe_allow_html=True)
-                
-                if detail["status"] == "processed" and "processed_at" in detail:
-                    st.caption(f"Đã xử lý lúc: {detail['processed_at']}")
-                elif detail["status"] == "failed" and "error" in detail:
-                    st.caption(f"Lỗi: {detail['error']}")
-    
-    except Exception as e:
-        st.error(f"Lỗi khi lấy trạng thái xử lý: {e}")
+                        st.text(f"🔍 Chi tiết lỗi: {type(e).__name__}")
+                        import traceback
+                        st.text(f"🔍 Traceback:")
+                        st.text(traceback.format_exc())
 
 elif menu == "📊 Xem Báo Cáo":
     st.header("📊 Xem Báo Cáo")
