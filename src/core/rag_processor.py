@@ -147,8 +147,17 @@ class MeetingProcessor:
         try:
             await self.rag.process_document_complete(file_path)
             
+            # Lấy thông tin file để truyền vào template
+            file_name = os.path.basename(file_path)
+            
+            # Format template với thông tin file cụ thể
+            formatted_template = SUMMARY_TEMPLATE.format(
+                file_name=file_name,
+                file_path=file_path
+            )
+            
             return await self.rag.aquery(
-                SUMMARY_TEMPLATE,
+                formatted_template,
                 mode="hybrid",
                 user_prompt=SYSTEM_PROMPT,
                 vlm_enhanced=True,
@@ -164,8 +173,17 @@ class MeetingProcessor:
         try:
             await self.rag.process_document_complete(file_path)
             
+            # Lấy thông tin file để truyền vào template
+            file_name = os.path.basename(file_path)
+            
+            # Format template với thông tin file cụ thể
+            formatted_template = FULL_CONTENT_TEMPLATE.format(
+                file_name=file_name,
+                file_path=file_path
+            )
+            
             return await self.rag.aquery(
-                FULL_CONTENT_TEMPLATE,
+                formatted_template,
                 mode="hybrid", 
                 user_prompt=SYSTEM_PROMPT,
                 vlm_enhanced=True,

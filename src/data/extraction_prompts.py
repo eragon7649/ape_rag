@@ -11,45 +11,51 @@ Hãy đảm bảo thông tin được trình bày rõ ràng, dễ hiểu và có
 
 # Template đơn giản cho việc tạo tóm tắt
 SUMMARY_TEMPLATE = """
+QUAN TRỌNG: Bạn đang phân tích file "{file_name}" tại đường dẫn "{file_path}".
+
 Dựa trên nội dung tài liệu sau, hãy tạo một bản tóm tắt ngắn gọn bao gồm:
 
 1. **THÔNG TIN CHÍNH**:
-   - Tiêu đề/chủ đề chính
-   - Ngày tháng (nếu có)
-   - Người liên quan (nếu có)
+   - Tiêu đề/chủ đề chính (dựa trên nội dung thực tế của file này)
+   - Ngày tháng (nếu có trong file này)
+   - Người liên quan (nếu có trong file này)
 
 2. **NỘI DUNG QUAN TRỌNG**:
-   - Các điểm chính được đề cập
-   - Quyết định hoặc kết luận (nếu có)
-   - Hành động cần thực hiện (nếu có)
+   - Các điểm chính được đề cập trong file này
+   - Quyết định hoặc kết luận (nếu có trong file này)
+   - Hành động cần thực hiện (nếu có trong file này)
 
 3. **TÓM TẮT**:
-   - Tóm tắt ngắn gọn trong 2-3 câu
+   - Tóm tắt ngắn gọn trong 2-3 câu về nội dung cụ thể của file này
 
+LƯU Ý: Chỉ phân tích nội dung của file "{file_name}" được cung cấp. Không sử dụng thông tin từ các file khác.
 Hãy trình bày thông tin một cách súc tích và dễ hiểu.
 """
 
 # Template cho việc tạo nội dung đầy đủ
 FULL_CONTENT_TEMPLATE = """
+QUAN TRỌNG: Bạn đang phân tích file "{file_name}" tại đường dẫn "{file_path}".
+
 Dựa trên nội dung tài liệu sau, hãy tạo một bản ghi đầy đủ bao gồm:
 
 1. **THÔNG TIN CƠ BẢN**:
-   - Tiêu đề tài liệu
-   - Ngày tháng
-   - Người tạo/người liên quan
+   - Tiêu đề tài liệu (dựa trên nội dung thực tế của file này)
+   - Ngày tháng (nếu có trong file này)
+   - Người tạo/người liên quan (nếu có trong file này)
    - Loại tài liệu
 
 2. **NỘI DUNG CHI TIẾT**:
-   - Toàn bộ nội dung được trình bày có cấu trúc
-   - Các phần/chương mục (nếu có)
-   - Bảng biểu, số liệu (nếu có)
-   - Trích dẫn quan trọng
+   - Toàn bộ nội dung được trình bày có cấu trúc từ file này
+   - Các phần/chương mục (nếu có trong file này)
+   - Bảng biểu, số liệu (nếu có trong file này)
+   - Trích dẫn quan trọng từ file này
 
 3. **THÔNG TIN BỔ SUNG**:
-   - Ghi chú quan trọng
-   - Tài liệu tham khảo (nếu có)
-   - Thông tin liên hệ (nếu có)
+   - Ghi chú quan trọng từ file này
+   - Tài liệu tham khảo (nếu có trong file này)
+   - Thông tin liên hệ (nếu có trong file này)
 
+LƯU Ý: Chỉ phân tích và trình bày nội dung của file "{file_name}" được cung cấp. Không sử dụng thông tin từ các file khác.
 Hãy trình bày thông tin một cách chi tiết và có cấu trúc để dễ theo dõi.
 """
 
