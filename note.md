@@ -22,3 +22,5 @@ Bash
 python3 setup.py 
 
 python src/main.py
+
+Run Giao diện: streamlit run test_interface.py

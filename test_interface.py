@@ -16,7 +16,7 @@ from core.config import DOCUMENTS_DIR, OUTPUT_DIR
 
 # Page configuration
 st.set_page_config(
-    page_title="RAG Meeting Processor - Test Interface",
+    page_title="Bộ Xử Lý Tài Liệu Cuộc Họp RAG - Giao Diện Kiểm Thử",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -79,7 +79,7 @@ def initialize_processor(api_key):
         st.session_state.api_key_set = True
         return True
     except Exception as e:
-        st.error(f"❌ Failed to initialize processor: {e}")
+        st.error(f"❌ Không thể khởi tạo bộ xử lý: {e}")
         return False
 
 def get_documents_list():
@@ -131,254 +131,317 @@ def get_output_files_for_document(document_name):
 def get_file_type(filename):
     """Determine file type based on filename"""
     if filename.endswith('.docx'):
-        return 'Word Document'
+        return 'Tài Liệu Word'
     elif filename.endswith('.json'):
-        return 'JSON Data'
+        return 'Dữ Liệu JSON'
     elif filename.endswith('.txt'):
         if 'COMPREHENSIVE' in filename:
-            return 'Comprehensive Report'
+            return 'Báo Cáo Toàn Diện'
         elif 'RAW_CONTENT' in filename:
-            return 'Raw Content'
+            return 'Nội Dung Thô'
         elif 'SUMMARY' in filename:
-            return 'Summary Report'
+            return 'Báo Cáo Tóm Tắt'
         else:
-            return 'Text File'
+            return 'Tệp Văn Bản'
     else:
-        return 'Unknown'
+        return 'Không Xác Định'
 
 def display_file_content(file_path, file_type):
     """Display content of a file based on its type"""
     try:
-        if file_type == 'JSON Data':
+        if file_type == 'Dữ Liệu JSON':
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             st.json(data)
-        elif file_type in ['Comprehensive Report', 'Raw Content', 'Summary Report', 'Text File']:
+        elif file_type in ['Báo Cáo Toàn Diện', 'Nội Dung Thô', 'Báo Cáo Tóm Tắt', 'Tệp Văn Bản']:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-            st.text_area("File Content", content, height=400)
+            st.text_area("Nội Dung Tệp", content, height=400)
         else:
-            st.info("File preview not available for this file type")
+            st.info("Xem trước tệp không khả dụng cho loại tệp này")
     except Exception as e:
-        st.error(f"Error reading file: {e}")
+        st.error(f"Lỗi khi đọc tệp: {e}")
 
 # Main interface
-st.markdown('<h1 class="main-header">🤖 RAG Meeting Processor</h1>', unsafe_allow_html=True)
-st.markdown('<h2 style="text-align: center; color: #666;">Test Interface</h2>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">🤖 Bộ Xử Lý Tài Liệu Cuộc Họp RAG</h1>', unsafe_allow_html=True)
+st.markdown('<h2 style="text-align: center; color: #666;">Giao Diện Kiểm Thử</h2>', unsafe_allow_html=True)
 
 # Sidebar for API Key
 with st.sidebar:
-    st.header("⚙️ Configuration")
+    st.header("⚙️ Cấu Hình")
     
     api_key = st.text_input(
-        "OpenAI API Key", 
+        "Khóa API OpenAI", 
         type="password",
-        help="Enter your OpenAI API key",
+        help="Nhập khóa API OpenAI của bạn",
         value=os.environ.get("OPENAI_API_KEY", "")
     )
     
-    if st.button("Initialize Processor", type="primary"):
+    if st.button("Khởi Tạo Bộ Xử Lý", type="primary"):
         if api_key:
-            with st.spinner("Initializing..."):
+            with st.spinner("Đang khởi tạo..."):
                 if initialize_processor(api_key):
-                    st.success("✅ Processor initialized successfully!")
+                    st.success("✅ Bộ xử lý đã được khởi tạo thành công!")
                 else:
-                    st.error("❌ Failed to initialize processor")
+                    st.error("❌ Không thể khởi tạo bộ xử lý")
         else:
-            st.error("❌ Please enter API key")
+            st.error("❌ Vui lòng nhập khóa API")
 
 # Main content area
 if not st.session_state.api_key_set:
-    st.warning("⚠️ Please initialize the processor with your API key in the sidebar")
+    st.warning("⚠️ Vui lòng khởi tạo bộ xử lý với khóa API của bạn trong thanh bên")
     st.stop()
 
 # Menu selection
 menu = st.selectbox(
-    "Select Menu",
-    ["📁 Upload & Process", "📊 View Reports"],
-    help="Choose between uploading new files or viewing existing reports"
+    "Chọn Menu",
+    ["📁 Tải Lên & Xử Lý", "📊 Xem Báo Cáo"],
+    help="Chọn giữa tải lên tệp mới hoặc xem báo cáo hiện có"
 )
 
-if menu == "📁 Upload & Process":
-    st.header("📁 Upload & Process Documents")
+if menu == "📁 Tải Lên & Xử Lý":
+    st.header("📁 Tải Lên & Xử Lý Tài Liệu")
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("Upload New Document")
+        st.subheader("Tải Lên Tài Liệu Mới")
         
         uploaded_file = st.file_uploader(
-            "Choose a file to upload",
+            "Chọn tệp để tải lên",
             type=['pdf', 'jpg', 'jpeg', 'png', 'docx', 'txt'],
-            help="Upload a meeting document to process"
+            help="Tải lên tài liệu cuộc họp để xử lý"
         )
         
         if uploaded_file:
-            st.success(f"✅ File uploaded: {uploaded_file.name}")
+            st.success(f"✅ Tệp đã tải lên: {uploaded_file.name}")
             
             # File info
             col_info1, col_info2 = st.columns(2)
             with col_info1:
-                st.metric("File Size", f"{uploaded_file.size:,} bytes")
+                st.metric("Kích Thước Tệp", f"{uploaded_file.size:,} bytes")
             with col_info2:
-                st.metric("File Type", uploaded_file.type)
+                st.metric("Loại Tệp", uploaded_file.type)
     
     with col2:
-        st.subheader("Processing Options")
-        
-        # Processing options
-        enable_vlm = st.checkbox("Enable VLM Enhanced", value=True, help="For image processing")
-        enable_table = st.checkbox("Enable Table Processing", value=True)
-        enable_equation = st.checkbox("Enable Equation Processing", value=True)
-        
-        # Query options
-        mode = st.selectbox("Query Mode", ["hybrid", "vector", "graph"], index=0)
-        top_k = st.slider("Top K Results", 5, 50, 20)
+        st.subheader("Tùy Chọn Xử Lý")
         
         # Process buttons
-        st.markdown("**Processing Options:**")
+        st.markdown("**Tùy Chọn Xử Lý:**")
         st.info("""
-        - **Process Uploaded File**: Upload a file and process it using incremental processing
-        - **Process All Files**: Run incremental processing on all files in the documents folder
+        - **Xử Lý Tệp Đã Tải**: Tải lên một tệp và xử lý nó bằng xử lý tăng dần
+        - **Xử Lý Tất Cả Tệp**: Chạy xử lý tăng dần trên tất cả tệp trong thư mục tài liệu
         """)
         
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("🚀 Process Uploaded File", type="primary", disabled=not uploaded_file):
+            if st.button("🚀 Xử Lý Tệp Đã Tải", type="primary", disabled=not uploaded_file):
                 if uploaded_file:
-                    with st.spinner("🔄 Processing document with incremental processing..."):
+                    with st.spinner("🔄 Đang xử lý tài liệu với xử lý tăng dần..."):
                         try:
                             # Save uploaded file temporarily
                             temp_path = os.path.join(DOCUMENTS_DIR, uploaded_file.name)
                             with open(temp_path, "wb") as f:
                                 f.write(uploaded_file.getbuffer())
                             
-                            # Use incremental processing instead of single file processing
-                            result = asyncio.run(st.session_state.processor.process_incremental(DOCUMENTS_DIR))
+                            st.info(f"📁 Đã lưu tệp: {temp_path}")
                             
-                            if result["status"] == "no_changes":
-                                st.info(f"ℹ️ {result['message']}")
-                            elif result["status"] == "completed":
-                                # Show processing results
-                                successful_count = result["successful_files"]
-                                failed_count = result["failed_files"]
-                                total_count = result["total_files"]
-                                
-                                if successful_count > 0:
-                                    st.success(f"✅ Processing completed! {successful_count}/{total_count} files processed successfully")
-                                    
-                                    # Show scan report
-                                    scan_report = result["scan_report"]
-                                    if scan_report["files_to_process_list"]:
-                                        st.info(f"📄 Files processed: {', '.join([f['name'] for f in scan_report['files_to_process_list']])}")
-                                    
-                                    # Show processing results for uploaded file
-                                    processing_results = result["processing_results"]
-                                    uploaded_file_result = None
-                                    for pr in processing_results:
-                                        if pr["file_path"] == temp_path:
-                                            uploaded_file_result = pr
-                                            break
-                                    
-                                    if uploaded_file_result and uploaded_file_result["success"]:
-                                        st.success(f"✅ {uploaded_file.name} processed successfully!")
-                                    elif uploaded_file_result and not uploaded_file_result["success"]:
-                                        st.error(f"❌ {uploaded_file.name} processing failed: {uploaded_file_result.get('error', 'Unknown error')}")
-                                else:
-                                    st.error("❌ No files were processed successfully")
-                                
-                                if failed_count > 0:
-                                    st.warning(f"⚠️ {failed_count} files failed to process")
+                            # Run incremental processor script
+                            import subprocess
+                            
+                            # Try multiple ways to find the script
+                            script_paths = [
+                                os.path.join(os.path.dirname(__file__), "run_incremental_processor.py"),
+                                "run_incremental_processor.py",
+                                os.path.abspath("run_incremental_processor.py")
+                            ]
+                            
+                            script_path = None
+                            for path in script_paths:
+                                if os.path.exists(path):
+                                    script_path = path
+                                    break
+                            
+                            if not script_path:
+                                st.error(f"❌ Không tìm thấy script run_incremental_processor.py")
+                                st.text(f"Đã thử các đường dẫn: {script_paths}")
                             else:
-                                st.error(f"❌ Processing failed with status: {result['status']}")
+                                st.info(f"🚀 Đang chạy script: {script_path}")
+                                st.info(f"📁 Working directory: {os.path.dirname(__file__)}")
+                                
+                                # Use virtual environment python
+                                venv_python = os.path.join(os.path.dirname(__file__), "venv", "bin", "python")
+                                if os.path.exists(venv_python):
+                                    python_cmd = venv_python
+                                    st.info(f"🐍 Sử dụng Python từ virtual environment: {python_cmd}")
+                                else:
+                                    python_cmd = sys.executable
+                                    st.info(f"🐍 Sử dụng Python hệ thống: {python_cmd}")
+                                
+                                result = subprocess.run([python_cmd, script_path], 
+                                                       capture_output=True, text=True, 
+                                                       cwd=os.path.dirname(__file__),
+                                                       timeout=300)  # 5 minutes timeout
+                                
+                                st.info(f"📊 Script hoàn thành với return code: {result.returncode}")
+                                
+                                if result.returncode == 0:
+                                    st.success(f"✅ {uploaded_file.name} đã được xử lý thành công!")
+                                    if result.stdout:
+                                        st.text("Kết quả xử lý:")
+                                        st.text(result.stdout)
+                                else:
+                                    st.error(f"❌ {uploaded_file.name} xử lý thất bại")
+                                    if result.stderr:
+                                        st.text("Chi tiết lỗi:")
+                                        st.text(result.stderr)
+                                    if result.stdout:
+                                        st.text("Output:")
+                                        st.text(result.stdout)
                             
+                        except subprocess.TimeoutExpired:
+                            st.error("❌ Xử lý quá thời gian (5 phút)")
                         except Exception as e:
-                            st.error(f"❌ Error: {str(e)}")
+                            st.error(f"❌ Lỗi: {str(e)}")
+                            st.text(f"Chi tiết: {type(e).__name__}")
+                            st.text(f"Working directory: {os.getcwd()}")
+                            st.text(f"Script path: {script_path if 'script_path' in locals() else 'Not defined'}")
         
         with col2:
-            if st.button("🔄 Process All Files", type="secondary"):
-                with st.spinner("🔄 Running incremental processing on all files..."):
+            if st.button("🔄 Xử Lý Tất Cả Tệp", type="secondary"):
+                with st.spinner("🔄 Đang chạy xử lý trên tất cả tệp..."):
                     try:
-                        # Run incremental processing on all files in documents directory
-                        result = asyncio.run(st.session_state.processor.process_incremental(DOCUMENTS_DIR))
+                        # Run processor script
+                        import subprocess
                         
-                        if result["status"] == "no_changes":
-                            st.info(f"ℹ️ {result['message']}")
-                        elif result["status"] == "completed":
-                            # Show processing results
-                            successful_count = result["successful_files"]
-                            failed_count = result["failed_files"]
-                            total_count = result["total_files"]
-                            
-                            if successful_count > 0:
-                                st.success(f"✅ Processing completed! {successful_count}/{total_count} files processed successfully")
-                                
-                                # Show scan report
-                                scan_report = result["scan_report"]
-                                if scan_report["files_to_process_list"]:
-                                    st.info(f"📄 Files processed: {', '.join([f['name'] for f in scan_report['files_to_process_list']])}")
-                                
-                                if scan_report["files_unchanged_list"]:
-                                    st.info(f"✅ Files unchanged: {', '.join([f['name'] for f in scan_report['files_unchanged_list']])}")
-                            else:
-                                st.error("❌ No files were processed successfully")
-                            
-                            if failed_count > 0:
-                                st.warning(f"⚠️ {failed_count} files failed to process")
+                        # Try multiple ways to find the script
+                        script_paths = [
+                            os.path.join(os.path.dirname(__file__), "run_processor.py"),
+                            "run_processor.py",
+                            os.path.abspath("run_processor.py")
+                        ]
+                        
+                        script_path = None
+                        for path in script_paths:
+                            if os.path.exists(path):
+                                script_path = path
+                                break
+                        
+                        if not script_path:
+                            st.error(f"❌ Không tìm thấy script run_processor.py")
+                            st.text(f"Đã thử các đường dẫn: {script_paths}")
                         else:
-                            st.error(f"❌ Processing failed with status: {result['status']}")
+                            st.info(f"🚀 Đang chạy script: {script_path}")
+                            st.info(f"📁 Working directory: {os.path.dirname(__file__)}")
+                            
+                            # Use virtual environment python
+                            venv_python = os.path.join(os.path.dirname(__file__), "venv", "bin", "python")
+                            if os.path.exists(venv_python):
+                                python_cmd = venv_python
+                                st.info(f"🐍 Sử dụng Python từ virtual environment: {python_cmd}")
+                            else:
+                                python_cmd = sys.executable
+                                st.info(f"🐍 Sử dụng Python hệ thống: {python_cmd}")
+                            
+                            result = subprocess.run([python_cmd, script_path], 
+                                                   capture_output=True, text=True, 
+                                                   cwd=os.path.dirname(__file__),
+                                                   timeout=300)  # 5 minutes timeout
+                            
+                            st.info(f"📊 Script hoàn thành với return code: {result.returncode}")
+                            
+                            if result.returncode == 0:
+                                st.success("✅ Xử lý tất cả tệp hoàn thành thành công!")
+                                if result.stdout:
+                                    st.text("Kết quả xử lý:")
+                                    st.text(result.stdout)
+                            else:
+                                st.error("❌ Xử lý tất cả tệp thất bại")
+                                if result.stderr:
+                                    st.text("Chi tiết lỗi:")
+                                    st.text(result.stderr)
+                                if result.stdout:
+                                    st.text("Output:")
+                                    st.text(result.stdout)
                         
+                    except subprocess.TimeoutExpired:
+                        st.error("❌ Xử lý quá thời gian (5 phút)")
                     except Exception as e:
-                        st.error(f"❌ Error: {str(e)}")
+                        st.error(f"❌ Lỗi: {str(e)}")
+                        st.text(f"Chi tiết: {type(e).__name__}")
+                        st.text(f"Working directory: {os.getcwd()}")
+                        st.text(f"Script path: {script_path if 'script_path' in locals() else 'Not defined'}")
     
     # Show processing status
-    st.subheader("📊 Processing Status")
+    st.subheader("📊 Trạng Thái Xử Lý")
+    
+    # Debug information
+    st.subheader("🔍 Thông Tin Debug")
+    
+    # Check documents directory
+    if os.path.exists(DOCUMENTS_DIR):
+        files_in_docs = [f for f in os.listdir(DOCUMENTS_DIR) 
+                        if not f.startswith('.') and f != 'README.md']
+        st.info(f"📁 Thư mục documents: {DOCUMENTS_DIR}")
+        st.info(f"📄 Số tệp trong documents: {len(files_in_docs)}")
+        if files_in_docs:
+            st.text(f"Tệp: {', '.join(files_in_docs)}")
+    else:
+        st.warning(f"⚠️ Thư mục documents không tồn tại: {DOCUMENTS_DIR}")
+    
+    # Check output directory
+    if os.path.exists(OUTPUT_DIR):
+        files_in_output = os.listdir(OUTPUT_DIR)
+        st.info(f"📁 Thư mục output: {OUTPUT_DIR}")
+        st.info(f"📄 Số tệp trong output: {len(files_in_output)}")
+    else:
+        st.warning(f"⚠️ Thư mục output không tồn tại: {OUTPUT_DIR}")
     
     try:
         status = st.session_state.processor.get_processing_status()
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Total Files", status["total_files"])
+            st.metric("Tổng Số Tệp", status["total_files"])
         with col2:
-            st.metric("Processed", status["processed_files"], delta=None)
+            st.metric("Đã Xử Lý", status["processed_files"], delta=None)
         with col3:
-            st.metric("Failed", status["failed_files"], delta=None)
+            st.metric("Thất Bại", status["failed_files"], delta=None)
         
         # Show detailed status
         if status["files_detail"]:
-            st.subheader("File Details")
+            st.subheader("Chi Tiết Tệp")
             for filename, detail in status["files_detail"].items():
                 status_color = "success" if detail["status"] == "processed" else "error" if detail["status"] == "failed" else "warning"
                 st.markdown(f"**{filename}**: <span class='status-{status_color}'>{detail['status'].upper()}</span>", unsafe_allow_html=True)
                 
                 if detail["status"] == "processed" and "processed_at" in detail:
-                    st.caption(f"Processed at: {detail['processed_at']}")
+                    st.caption(f"Đã xử lý lúc: {detail['processed_at']}")
                 elif detail["status"] == "failed" and "error" in detail:
-                    st.caption(f"Error: {detail['error']}")
+                    st.caption(f"Lỗi: {detail['error']}")
     
     except Exception as e:
-        st.error(f"Error getting processing status: {e}")
+        st.error(f"Lỗi khi lấy trạng thái xử lý: {e}")
 
-elif menu == "📊 View Reports":
-    st.header("📊 View Reports")
+elif menu == "📊 Xem Báo Cáo":
+    st.header("📊 Xem Báo Cáo")
     
     # Get list of documents
     documents = get_documents_list()
     
     if not documents:
-        st.warning("No documents found in the documents folder")
+        st.warning("Không tìm thấy tài liệu nào trong thư mục documents")
         st.stop()
     
     # Document selection
-    st.subheader("Select Document")
+    st.subheader("Chọn Tài Liệu")
     
     document_names = [doc['name'] for doc in documents]
     selected_doc_name = st.selectbox(
-        "Choose a document to view reports",
+        "Chọn một tài liệu để xem báo cáo",
         document_names,
-        help="Select a document to view its generated reports"
+        help="Chọn một tài liệu để xem các báo cáo đã tạo"
     )
     
     if selected_doc_name:
@@ -388,8 +451,8 @@ elif menu == "📊 View Reports":
         st.markdown(f"""
         <div class="file-info">
             <h4>📄 {selected_doc['name']}</h4>
-            <p><strong>Size:</strong> {selected_doc['size']:,} bytes</p>
-            <p><strong>Last Modified:</strong> {selected_doc['modified']}</p>
+            <p><strong>Kích Thước:</strong> {selected_doc['size']:,} bytes</p>
+            <p><strong>Chỉnh Sửa Lần Cuối:</strong> {selected_doc['modified']}</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -397,10 +460,10 @@ elif menu == "📊 View Reports":
         output_files = get_output_files_for_document(selected_doc_name)
         
         if not output_files:
-            st.warning(f"No output files found for {selected_doc_name}")
-            st.info("Process the document first using the Upload & Process menu")
+            st.warning(f"Không tìm thấy tệp đầu ra nào cho {selected_doc_name}")
+            st.info("Hãy xử lý tài liệu trước bằng menu Tải Lên & Xử Lý")
         else:
-            st.subheader(f"📁 Output Files ({len(output_files)} files)")
+            st.subheader(f"📁 Tệp Đầu Ra ({len(output_files)} tệp)")
             
             # Show output files
             for output_file in output_files:
@@ -408,25 +471,25 @@ elif menu == "📊 View Reports":
                     col1, col2, col3 = st.columns([2, 1, 1])
                     
                     with col1:
-                        st.write(f"**Type:** {output_file['type']}")
-                        st.write(f"**Size:** {output_file['size']:,} bytes")
+                        st.write(f"**Loại:** {output_file['type']}")
+                        st.write(f"**Kích Thước:** {output_file['size']:,} bytes")
                     
                     with col2:
-                        st.write(f"**Modified:** {output_file['modified']}")
+                        st.write(f"**Chỉnh Sửa:** {output_file['modified']}")
                     
                     with col3:
-                        if st.button(f"View", key=f"view_{output_file['name']}"):
+                        if st.button(f"Xem", key=f"view_{output_file['name']}"):
                             st.session_state[f"viewing_{output_file['name']}"] = True
                     
                     # Show content if viewing
                     if st.session_state.get(f"viewing_{output_file['name']}", False):
-                        st.subheader(f"Content: {output_file['name']}")
+                        st.subheader(f"Nội Dung: {output_file['name']}")
                         display_file_content(output_file['path'], output_file['type'])
                         
-                        if st.button(f"Close", key=f"close_{output_file['name']}"):
+                        if st.button(f"Đóng", key=f"close_{output_file['name']}"):
                             st.session_state[f"viewing_{output_file['name']}"] = False
                             st.rerun()
 
 # Footer
 st.markdown("---")
-st.markdown("**RAG Meeting Processor** - AI-powered document processing system with incremental processing")
+st.markdown("**Bộ Xử Lý Tài Liệu Cuộc Họp RAG** - Hệ thống xử lý tài liệu được hỗ trợ bởi AI với xử lý tăng dần")
