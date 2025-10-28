@@ -15,7 +15,6 @@ APE RAG (Advanced Processing Engine - Retrieval-Augmented Generation) là hệ t
 - **PDF**: OCR viết tay, trích xuất bảng biểu, phân tích layout
 - **DOCX**: Bảo toàn định dạng, trích xuất đoạn văn và bảng
 - **TXT**: Hỗ trợ nhiều encoding (UTF-8, Latin-1, CP1252)
-- **HTML/Markdown**: Làm sạch nội dung và trích xuất text
 
 ### 🧠 Trích Xuất Thông Minh
 - **Entity Recognition**: Người, tổ chức, ngày tháng, quyết định
