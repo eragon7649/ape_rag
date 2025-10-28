@@ -276,3 +276,15 @@ tail -f /var/log/nginx/error.log
 
 *Last updated: $(date)*
 *Project: RAG Meeting Processor*
+
+
+### Yêu Cầu Hệ Thống
+- **RAM**: Tối thiểu 8GB (khuyến nghị 16GB)
+- **Storage**: 10GB+ cho xử lý tài liệu
+- **Network**: Kết nối internet ổn định cho OpenAI API
+- **CPU**: Đa nhân khuyến nghị cho xử lý song song
+
+### Chi Phí API (Ước tính mỗi tài liệu)
+- **GPT-4o-mini**: ~$0.01-0.03
+- **GPT-4o**: ~$0.05-0.15 (nếu có hình ảnh)
+- **Embeddings**: ~$0.001

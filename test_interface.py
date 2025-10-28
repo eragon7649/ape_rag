@@ -69,22 +69,6 @@ if 'formatter' not in st.session_state:
 if 'api_key_set' not in st.session_state:
     st.session_state.api_key_set = False
 
-def get_python_command():
-    """Get Python command with fallback handling"""
-    # Thử venv trước
-    venv_python = os.path.join(SCRIPT_DIR, "venv", "bin", "python")
-    
-    if os.path.exists(venv_python):
-        return venv_python, "✅ Sử dụng Python từ virtual environment"
-    
-    # Fallback: sử dụng system python
-    import sys
-    system_python = sys.executable
-    if system_python and os.path.exists(system_python):
-        return system_python, "⚠️ Sử dụng system Python (không có venv)"
-    
-    # Fallback cuối cùng
-    return "python3", "⚠️ Sử dụng python3 command"
 
 def initialize_processor(api_key):
     """Initialize processor with API key"""
@@ -257,66 +241,34 @@ if menu == "📁 Tải Lên & Xử Lý":
                                 f.write(uploaded_file.getbuffer())
                             st.success("✅ Đã lưu tệp thành công")
                             
-                            # Run incremental processor script
-                            st.info("🔍 Bước 3: Chuẩn bị chạy script incremental")
-                            import subprocess
+                            # Import và chạy trực tiếp function incremental processing
+                            st.info("🔍 Bước 3: Import và chạy incremental processing")
                             
-                            script_path = os.path.join(SCRIPT_DIR, "run_incremental_processor.py")
-                            st.text(f"📄 Script path: {script_path}")
-                            st.text(f"📄 Script exists: {os.path.exists(script_path)}")
-                            
-                            # Use virtual environment python
-                            st.info("🔍 Bước 4: Xác định Python command")
-                            python_cmd, status_msg = get_python_command()
-                            st.info(status_msg)
-                            
-                            # Additional validation
-                            if not python_cmd or python_cmd.strip() == "":
-                                st.error("❌ Không thể xác định Python command")
-                                st.error("🔍 Hãy kiểm tra:")
-                                st.error(f"   - Virtual environment có tồn tại tại: {os.path.join(SCRIPT_DIR, 'venv')}")
-                                st.error(f"   - Python executable có tồn tại tại: {os.path.join(SCRIPT_DIR, 'venv', 'bin', 'python')}")
-                                st.stop()
-                            
-                            st.text(f"🐍 Final python cmd: '{python_cmd}'")
-                            st.text(f"📁 Working directory: {SCRIPT_DIR}")
-                            
-                            st.info("🔍 Bước 5: Chạy subprocess")
-                            
-                            # Debug information
-                            st.text(f"🔍 Debug - python_cmd type: {type(python_cmd)}")
-                            st.text(f"🔍 Debug - python_cmd value: '{python_cmd}'")
-                            st.text(f"🔍 Debug - script_path: '{script_path}'")
-                            st.text(f"🔍 Debug - cwd: '{SCRIPT_DIR}'")
-                            st.text(f"🔍 Debug - python_cmd exists: {os.path.exists(python_cmd) if python_cmd else 'N/A'}")
-                            
-                            # Use incremental processing instead of single file processing
-                            # result = asyncio.run(st.session_state.processor.process_incremental(DOCUMENTS_DIR))
-                            result = subprocess.run([python_cmd, script_path], 
-                                                    capture_output=True, text=True, 
-                                                    cwd=SCRIPT_DIR,
-                                                    timeout=300)  # 5 minutes timeout
+                            try:
+                                # Import function từ run_incremental_processor
+                                from run_incremental_processor import run_incremental_processing
+                                
+                                st.info("🔍 Bước 4: Chạy incremental processing")
+                                
+                                # Chạy async function
+                                result = asyncio.run(run_incremental_processing())
+                                
+                                st.success("✅ Incremental processing hoàn thành!")
+                                
+                            except ImportError as e:
+                                st.error(f"❌ Không thể import function: {e}")
+                                st.info("🔍 Fallback: Sử dụng processor trực tiếp")
+                                
+                                # Fallback: Sử dụng processor trực tiếp
+                                result = asyncio.run(st.session_state.processor.process_incremental(DOCUMENTS_DIR))
+                                
+                                if result["status"] == "no_changes":
+                                    st.info(f"✅ {result['message']}")
+                                else:
+                                    st.success(f"✅ Đã xử lý {result['successful_files']}/{result['total_files']} tệp")
                             
                             
-                            st.info("🔍 Bước 6: Kiểm tra kết quả")
-                            st.text(f"📊 Return code: {result.returncode}")
-                            st.text(f"📊 Stdout length: {len(result.stdout)}")
-                            st.text(f"📊 Stderr length: {len(result.stderr)}")
-                            
-                            if result.stdout:
-                                st.text("📄 Stdout:")
-                                st.text(result.stdout)
-                            
-                            if result.stderr:
-                                st.text("❌ Stderr:")
-                                st.text(result.stderr)
-                            
-                            if result.returncode == 0:
-                                st.success(f"✅ {uploaded_file.name} đã được xử lý thành công!")
-                            else:
-                                st.error(f"❌ {uploaded_file.name} xử lý thất bại")
-                        except subprocess.TimeoutExpired:
-                            st.error("❌ Xử lý quá thời gian (5 phút)")
+                            st.success(f"✅ {uploaded_file.name} đã được xử lý thành công!")
                         except Exception as e:
                             st.error(f"❌ Lỗi: {str(e)}")
                             st.text(f"🔍 Chi tiết lỗi: {type(e).__name__}")
@@ -330,57 +282,39 @@ if menu == "📁 Tải Lên & Xử Lý":
                     try:
                         st.info("🔍 Bước 1: Bắt đầu xử lý tất cả tệp")
                         
-                        # Run processor script
-                        st.info("🔍 Bước 2: Chuẩn bị chạy script processor")
-                        import subprocess
+                        # Import và chạy trực tiếp function processing
+                        st.info("🔍 Bước 2: Import và chạy processing pipeline")
                         
-                        script_path = os.path.join(SCRIPT_DIR, "run_processor.py")
-                        st.text(f"📄 Script path: {script_path}")
-                        st.text(f"📄 Script exists: {os.path.exists(script_path)}")
+                        try:
+                            # Import function từ run_processor
+                            from run_processor import run_processing_pipeline
+                            
+                            st.info("🔍 Bước 3: Chạy processing pipeline")
+                            
+                            # Chạy async function
+                            asyncio.run(run_processing_pipeline())
+                            
+                            st.success("✅ Processing pipeline hoàn thành!")
+                            
+                        except ImportError as e:
+                            st.error(f"❌ Không thể import function: {e}")
+                            st.info("🔍 Fallback: Sử dụng processor trực tiếp")
+                            
+                            # Fallback: Sử dụng processor trực tiếp
+                            files_to_process = [f for f in os.listdir(DOCUMENTS_DIR) 
+                                               if not f.startswith('.') and f != 'README.md']
+                            
+                            for file_name in files_to_process:
+                                file_path = os.path.join(DOCUMENTS_DIR, file_name)
+                                extracted_data = asyncio.run(st.session_state.processor.process_document_and_extract(file_path))
+                                
+                                if not extracted_data.get("error"):
+                                    file_base_name = os.path.splitext(file_name)[0]
+                                    st.session_state.formatter.create_summary_txt(extracted_data, file_base_name)
+                                    st.session_state.formatter.create_full_content_txt(extracted_data, file_base_name)
+                            
+                            st.success(f"✅ Đã xử lý {len(files_to_process)} tệp")
                         
-                        # Use virtual environment python
-                        st.info("🔍 Bước 3: Xác định Python command")
-                        python_cmd, status_msg = get_python_command()
-                        st.info(status_msg)
-                        
-                        # Additional validation
-                        if not python_cmd or python_cmd.strip() == "":
-                            st.error("❌ Không thể xác định Python command")
-                            st.error("🔍 Hãy kiểm tra:")
-                            st.error(f"   - Virtual environment có tồn tại tại: {os.path.join(SCRIPT_DIR, 'venv')}")
-                            st.error(f"   - Python executable có tồn tại tại: {os.path.join(SCRIPT_DIR, 'venv', 'bin', 'python')}")
-                            st.stop()
-                        
-                        st.text(f"🐍 Final python cmd: '{python_cmd}'")
-                        st.text(f"📁 Working directory: {SCRIPT_DIR}")
-                        
-                        st.info("🔍 Bước 4: Chạy subprocess")
-                        # Kiểm tra sự tồn tại của tệp (rất quan trọng)
-                        result = subprocess.run([python_cmd, script_path], 
-                                               capture_output=True, text=True, 
-                                               cwd=SCRIPT_DIR,
-                                               timeout=300)  # 5 minutes timeout
-                        
-                        st.info("🔍 Bước 5: Kiểm tra kết quả")
-                        st.text(f"📊 Return code: {result.returncode}")
-                        st.text(f"📊 Stdout length: {len(result.stdout)}")
-                        st.text(f"📊 Stderr length: {len(result.stderr)}")
-                        
-                        if result.stdout:
-                            st.text("📄 Stdout:")
-                            st.text(result.stdout)
-                        
-                        if result.stderr:
-                            st.text("❌ Stderr:")
-                            st.text(result.stderr)
-                        
-                        if result.returncode == 0:
-                            st.success("✅ Xử lý tất cả tệp hoàn thành thành công!")
-                        else:
-                            st.error("❌ Xử lý tất cả tệp thất bại")
-                        
-                    except subprocess.TimeoutExpired:
-                        st.error("❌ Xử lý quá thời gian (5 phút)")
                     except Exception as e:
                         st.error(f"❌ Lỗi: {str(e)}")
                         st.text(f"🔍 Chi tiết lỗi: {type(e).__name__}")
