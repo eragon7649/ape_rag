@@ -7,8 +7,9 @@ import json
 from datetime import datetime
 import sys
 
+SCRIPT_DIR = os.path.dirname(__file__)
 # Add src directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.join(SCRIPT_DIR, 'src'))
 
 from core.rag_processor import MeetingProcessor
 from core.output_formatter import OutputFormatter
@@ -67,6 +68,23 @@ if 'formatter' not in st.session_state:
     st.session_state.formatter = None
 if 'api_key_set' not in st.session_state:
     st.session_state.api_key_set = False
+
+def get_python_command():
+    """Get Python command with fallback handling"""
+    # Thử venv trước
+    venv_python = os.path.join(SCRIPT_DIR, "venv", "bin", "python")
+    
+    if os.path.exists(venv_python):
+        return venv_python, "✅ Sử dụng Python từ virtual environment"
+    
+    # Fallback: sử dụng system python
+    import sys
+    system_python = sys.executable
+    if system_python and os.path.exists(system_python):
+        return system_python, "⚠️ Sử dụng system Python (không có venv)"
+    
+    # Fallback cuối cùng
+    return "python3", "⚠️ Sử dụng python3 command"
 
 def initialize_processor(api_key):
     """Initialize processor with API key"""
@@ -243,31 +261,42 @@ if menu == "📁 Tải Lên & Xử Lý":
                             st.info("🔍 Bước 3: Chuẩn bị chạy script incremental")
                             import subprocess
                             
-                            script_path = os.path.join(os.path.dirname(__file__), "run_incremental_processor.py")
+                            script_path = os.path.join(SCRIPT_DIR, "run_incremental_processor.py")
                             st.text(f"📄 Script path: {script_path}")
                             st.text(f"📄 Script exists: {os.path.exists(script_path)}")
                             
                             # Use virtual environment python
                             st.info("🔍 Bước 4: Xác định Python command")
-                            venv_python = os.path.join(os.path.dirname(__file__), "venv", "bin", "python")
-                            st.text(f"🐍 Venv python: {venv_python}")
-                            st.text(f"🐍 Venv exists: {os.path.exists(venv_python)}")
+                            python_cmd, status_msg = get_python_command()
+                            st.info(status_msg)
                             
-                            if os.path.exists(venv_python):
-                                python_cmd = venv_python
-                                st.info("✅ Sử dụng Python từ virtual environment")
-                            else:
-                                python_cmd = sys.executable
-                                st.info("✅ Sử dụng Python hệ thống")
+                            # Additional validation
+                            if not python_cmd or python_cmd.strip() == "":
+                                st.error("❌ Không thể xác định Python command")
+                                st.error("🔍 Hãy kiểm tra:")
+                                st.error(f"   - Virtual environment có tồn tại tại: {os.path.join(SCRIPT_DIR, 'venv')}")
+                                st.error(f"   - Python executable có tồn tại tại: {os.path.join(SCRIPT_DIR, 'venv', 'bin', 'python')}")
+                                st.stop()
                             
-                            st.text(f"🐍 Final python cmd: {python_cmd}")
-                            st.text(f"📁 Working directory: {os.path.dirname(__file__)}")
+                            st.text(f"🐍 Final python cmd: '{python_cmd}'")
+                            st.text(f"📁 Working directory: {SCRIPT_DIR}")
                             
                             st.info("🔍 Bước 5: Chạy subprocess")
+                            
+                            # Debug information
+                            st.text(f"🔍 Debug - python_cmd type: {type(python_cmd)}")
+                            st.text(f"🔍 Debug - python_cmd value: '{python_cmd}'")
+                            st.text(f"🔍 Debug - script_path: '{script_path}'")
+                            st.text(f"🔍 Debug - cwd: '{SCRIPT_DIR}'")
+                            st.text(f"🔍 Debug - python_cmd exists: {os.path.exists(python_cmd) if python_cmd else 'N/A'}")
+                            
+                            # Use incremental processing instead of single file processing
+                            # result = asyncio.run(st.session_state.processor.process_incremental(DOCUMENTS_DIR))
                             result = subprocess.run([python_cmd, script_path], 
-                                                   capture_output=True, text=True, 
-                                                   cwd=os.path.dirname(__file__),
-                                                   timeout=300)  # 5 minutes timeout
+                                                    capture_output=True, text=True, 
+                                                    cwd=SCRIPT_DIR,
+                                                    timeout=300)  # 5 minutes timeout
+                            
                             
                             st.info("🔍 Bước 6: Kiểm tra kết quả")
                             st.text(f"📊 Return code: {result.returncode}")
@@ -286,7 +315,6 @@ if menu == "📁 Tải Lên & Xử Lý":
                                 st.success(f"✅ {uploaded_file.name} đã được xử lý thành công!")
                             else:
                                 st.error(f"❌ {uploaded_file.name} xử lý thất bại")
-                            
                         except subprocess.TimeoutExpired:
                             st.error("❌ Xử lý quá thời gian (5 phút)")
                         except Exception as e:
@@ -295,7 +323,7 @@ if menu == "📁 Tải Lên & Xử Lý":
                             import traceback
                             st.text(f"🔍 Traceback:")
                             st.text(traceback.format_exc())
-        
+
         with col2:
             if st.button("🔄 Xử Lý Tất Cả Tệp", type="secondary"):
                 with st.spinner("🔄 Đang xử lý tất cả tệp..."):
@@ -306,30 +334,31 @@ if menu == "📁 Tải Lên & Xử Lý":
                         st.info("🔍 Bước 2: Chuẩn bị chạy script processor")
                         import subprocess
                         
-                        script_path = os.path.join(os.path.dirname(__file__), "run_processor.py")
+                        script_path = os.path.join(SCRIPT_DIR, "run_processor.py")
                         st.text(f"📄 Script path: {script_path}")
                         st.text(f"📄 Script exists: {os.path.exists(script_path)}")
                         
                         # Use virtual environment python
                         st.info("🔍 Bước 3: Xác định Python command")
-                        venv_python = os.path.join(os.path.dirname(__file__), "venv", "bin", "python")
-                        st.text(f"🐍 Venv python: {venv_python}")
-                        st.text(f"🐍 Venv exists: {os.path.exists(venv_python)}")
+                        python_cmd, status_msg = get_python_command()
+                        st.info(status_msg)
                         
-                        if os.path.exists(venv_python):
-                            python_cmd = venv_python
-                            st.info("✅ Sử dụng Python từ virtual environment")
-                        else:
-                            python_cmd = sys.executable
-                            st.info("✅ Sử dụng Python hệ thống")
+                        # Additional validation
+                        if not python_cmd or python_cmd.strip() == "":
+                            st.error("❌ Không thể xác định Python command")
+                            st.error("🔍 Hãy kiểm tra:")
+                            st.error(f"   - Virtual environment có tồn tại tại: {os.path.join(SCRIPT_DIR, 'venv')}")
+                            st.error(f"   - Python executable có tồn tại tại: {os.path.join(SCRIPT_DIR, 'venv', 'bin', 'python')}")
+                            st.stop()
                         
-                        st.text(f"🐍 Final python cmd: {python_cmd}")
-                        st.text(f"📁 Working directory: {os.path.dirname(__file__)}")
+                        st.text(f"🐍 Final python cmd: '{python_cmd}'")
+                        st.text(f"📁 Working directory: {SCRIPT_DIR}")
                         
                         st.info("🔍 Bước 4: Chạy subprocess")
+                        # Kiểm tra sự tồn tại của tệp (rất quan trọng)
                         result = subprocess.run([python_cmd, script_path], 
                                                capture_output=True, text=True, 
-                                               cwd=os.path.dirname(__file__),
+                                               cwd=SCRIPT_DIR,
                                                timeout=300)  # 5 minutes timeout
                         
                         st.info("🔍 Bước 5: Kiểm tra kết quả")
